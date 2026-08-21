@@ -1,6 +1,5 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'services/storage_service.dart';
 
 void main() {
   runApp(const SakuSiswaApp());
@@ -42,31 +41,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   // --- LOGIKA SHAREDPREFERENCES --- //
 
-  // 1. Membaca data dari SharedPreferences
+// 1. Membaca data dari SharedPreferences (via Storage Service)
   Future<void> _muatDataLokal() async {
-    final prefs = await SharedPreferences.getInstance();
+    final data = await muatDataLokal();
     setState(() {
-      _totalSaldo = prefs.getInt('total_saldo') ?? 0;
-      
-      // Membaca list string JSON dan di-decode kembali ke List Map
-      List<String>? dataStringList = prefs.getStringList('riwayat');
-      if (dataStringList != null) {
-        _riwayatPengeluaran = dataStringList
-            .map((item) => jsonDecode(item) as Map<String, dynamic>)
-            .toList();
-      }
+      _totalSaldo = data['saldo'];
+      _riwayatPengeluaran = data['riwayat'];
     });
   }
 
-  // 2. Menyimpan data ke SharedPreferences
+// 2. Menyimpan data ke SharedPreferences (via Storage Service)
   Future<void> _simpanDataLokal() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('total_saldo', _totalSaldo);
-
-    // Mengubah List Map menjadi List String JSON
-    List<String> dataStringList =
-        _riwayatPengeluaran.map((item) => jsonEncode(item)).toList();
-    await prefs.setStringList('riwayat', dataStringList);
+    await simpanDataLokal(_totalSaldo, _riwayatPengeluaran);
   }
 
   // 3. Menambah transaksi baru
@@ -107,7 +93,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Tambah Pengeluaran', style: Theme.of(context).textTheme.titleLarge),
+            Text('Tambah Pengeluaran',
+                style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 12),
             TextField(
               controller: judulController,
@@ -158,7 +145,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
             // CARD UI STANDAR INDUSTRI
             Card(
               elevation: 4,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
               color: Colors.teal.shade700,
               child: Padding(
                 padding: const EdgeInsets.all(20.0),
@@ -170,7 +158,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     Text(
                       'Rp $_totalSaldo',
                       style: const TextStyle(
-                          color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold),
+                          color: Colors.white,
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 12),
                     TextButton.icon(
@@ -193,11 +183,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             ),
             const SizedBox(height: 10),
-            
+
             // DYNAMIC LISTVIEW
             Expanded(
               child: _riwayatPengeluaran.isEmpty
-                  ? const Center(child: Text('Belum ada pengeluaran hari ini. Hemat banget! 🎉'))
+                  ? const Center(
+                      child: Text(
+                          'Belum ada pengeluaran hari ini. Hemat banget! 🎉'))
                   : ListView.builder(
                       itemCount: _riwayatPengeluaran.length,
                       itemBuilder: (context, index) {
@@ -213,7 +205,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             trailing: Text(
                               '- Rp ${item['nominal']}',
                               style: const TextStyle(
-                                  color: Colors.red, fontWeight: FontWeight.bold),
+                                  color: Colors.red,
+                                  fontWeight: FontWeight.bold),
                             ),
                           ),
                         );
